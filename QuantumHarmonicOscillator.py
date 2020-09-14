@@ -40,14 +40,11 @@ class QuantumOscillator:
         self._norm = np.linalg.norm(self.c_list)
         self._n_vector = np.identity(self.dim)
 
-        # Hilbert Space ket in dictionary form (key = n, value = vector)
-        self.n_state = {n: (self.c_list[i] * self._n_vector[i]) / self._norm for (i, n) in enumerate(self.n_list)}
-
         # Hilbert Space in dictionary form (key = n, value = coefficient)
         self.n_coeffs = {n: self.c_list[i] / self._norm for (i, n) in enumerate(self.n_list)}
 
         # Hilbert Space ket in array form
-        self.state_vector = sum(self.n_state.values())
+        self.state_vector = sum([self.n_coeffs[n] * self._n_vector[i] for i, n in enumerate(self.n_coeffs.keys())])
 
         # renormalization (purely physical, useless for code purposes)
         self._norm = 1
@@ -61,13 +58,11 @@ class QuantumOscillator:
 
     def _remove_zero(self):
         """
-        If |0> is part of the state, removes it and shortens array in self.n_states by 1.
+        If |0> is part of the state, removes it and shortens array in self.n_coeffs by 1.
         """
         try:
-            del self.n_state[0]
             del self.n_coeffs[0]
             self.dim -= 1
-            self.n_state = {n: np.delete(self.n_state[n], 0) for n in self.n_state.keys()}
         except KeyError:
             pass
 
@@ -77,15 +72,13 @@ class QuantumOscillator:
         """
         # in place state modification
         if not number:
-            self.n_state = {n + n_shift:
-                            (np.sqrt(n + result_shift) * self.n_state[n]) / norm for n in self.n_state.keys()}
             self.n_coeffs = {n + n_shift:
                              (np.sqrt(n + result_shift) * self.n_coeffs[n]) / norm for n in self.n_coeffs.keys()}
         else:
-            self.n_state = {n: (n * self.n_state[n]) / self._norm for n in self.n_state.keys()}
-            self.n_coeffs = {n: (n * self.n_coeffs[n]) / self._norm for n in self.n_coeffs.keys()}
+            self.n_coeffs = {n: (n * self.n_coeffs[n]) / norm for n in self.n_coeffs.keys()}
 
-        self.state_vector = sum(self.n_state.values())
+        self._n_vector = np.identity(self.dim)
+        self.state_vector = sum([self.n_coeffs[n] * self._n_vector[i] for i, n in enumerate(self.n_coeffs)])
 
         # renormalization (purely physical, useless for code purposes)
         self._norm = 1
@@ -169,7 +162,7 @@ class QuantumOscillator:
         :parameter n: Harmonic Oscillator quantum number
         :returns probability of finding system in state |n>
         """
-        if n in self.n_state.keys():
+        if n in self.n_coeffs.keys():
             return modulus_squared(self.n_coeffs[n])
         else:
             return 0
@@ -244,8 +237,8 @@ def add(psi: QuantumOscillator, phi: QuantumOscillator, new_name=" "):
     :returns HarmonicOscillatorEnergyState object
     """
     if psi.omega == phi.omega:
-        set_psi_keys = set(psi.n_state.keys())
-        set_phi_keys = set(phi.n_state.keys())
+        set_psi_keys = set(psi.n_coeffs.keys())
+        set_phi_keys = set(phi.n_coeffs.keys())
 
         # setting up logical sets
         double_keys = set_psi_keys & set_phi_keys
@@ -292,31 +285,35 @@ def modulus_squared(x):
 
 if __name__ == '__main__':
 
-    state_0 = QuantumOscillator([0, 6], (1, np.sqrt(3)), omega=1, name='psi')
-    state_1 = QuantumOscillator([3, 9], [np.sqrt(3), 1], omega=1, name='phi')
+    psi_0 = QuantumOscillator([0, 6], (1, np.sqrt(3)), omega=1, name='psi_0')
+    phi_1 = QuantumOscillator([3, 9], [np.sqrt(3), 1], omega=1, name='phi_1')
 
-    print(f'|0> = {state_0.state_vector}, \t{state_0.n_state}\n'
-          f'|1> = {state_1.state_vector}, \t\t\t\t\t{state_1.n_state}')
+    psi_0.display()
+    phi_1.display()
 
-    print(f'N|0> = {round(state_0.number(), 6)}\n'
-          f'N|1> = {state_1.number()}')
+    print(f'N|0> = {round(psi_0.number(), 6)}\n'
+          f'N|1> = {phi_1.number()}')
 
-    a0 = state_0.annihilation()
-    a1 = state_1.annihilation()
-    print(f'a|0> = {a0}')
-    print(f'a|1> = {a1}')
+    a0 = psi_0.annihilation()
+    a1 = phi_1.annihilation()
+    print(f'a|{psi_0.name}> = {a0}|{psi_0.name}>')
+    print(f'a|{phi_1.name}> = {a1}|{phi_1.name}>')
 
-    print(f'|E0> = {state_0.state_vector}, \t{state_0.n_state}\n'
-          f'|E1> = {state_1.state_vector}, \t\t\t\t\t{state_1.n_state}')
+    print('Post 1st annihilation:')
+    psi_0.display()
+    phi_1.display()
 
-    aa0 = state_0.annihilation()
-    aa1 = state_1.annihilation()
-    print(f'a|E0> = {aa0}')
-    print(f'a|E1> = {aa1}')
+    aa0 = psi_0.annihilation()
+    aa1 = phi_1.annihilation()
 
-    print(f'|0> = {state_0.state_vector}, \t{state_0.n_state}\n'
-          f'|1> = {state_1.state_vector}, \t\t\t\t\t{state_1.n_state}')
+    print(f'a|{psi_0.name}> = {aa0}|{psi_0.name}>')
+    print(f'a|{phi_1.name}> = {aa1}|{phi_1.name}>')
 
-    new_state = add(state_0, state_1, new_name='PSI')
+    print('Post 2nd annihilation:')
+    psi_0.display()
+    phi_1.display()
+
+    new_state = add(psi_0, phi_1, new_name='PSI')
+    print('New state, result of adding previous two states:')
     new_state.display()
     print(f'<6|{new_state.name}> = {new_state.n_probability(6)}')
