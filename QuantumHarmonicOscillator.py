@@ -10,7 +10,7 @@ iterable = list or tuple or set or np.array  # custom iterable type
 
 
 class QuantumOscillator:
-    def __init__(self, n_list: iterable, c_list: iterable, omega=1, mass=1, h_bar=1, name=" "):
+    def __init__(self, n_states: iterable, coefficients: iterable, omega=1, mass=1, h_bar=1, name=" "):
         """
         Class that describes a generic Quantum Harmonic Oscillator state.
         H = 1/2m * p^2  +  1/2 * m * omega^2 * x^2  (Hamiltonian)
@@ -18,8 +18,8 @@ class QuantumOscillator:
         key = n
         value = vector with all elements set to 0, except for the i-th element
         which is equal to c_array coefficient divided by c_array's norm.
-        :parameter n_list: quantum numbers list, will define various |n> states
-        :parameter c_list: coefficients list of |n> states (not necessarily normalized, we'll do that for you :) )
+        :parameter n_states: quantum numbers list, will define various |n> states
+        :parameter coefficients: coefficients list of |n> states (not necessarily normalized, we'll do that for you :) )
         """
         # ket name
         self.name = name
@@ -32,9 +32,9 @@ class QuantumOscillator:
         self.alpha = np.sqrt(self.mass * self.omega / self.h_bar)  # useful for wavefunction
 
         # Hilbert Space parameters
-        self.dim = len(n_list)
-        self.c_list = [c for n, c in sorted(zip(n_list, c_list))]
-        self.n_list = sorted(n_list)
+        self.dim = len(n_states)
+        self.c_list = [c for n, c in sorted(zip(n_states, coefficients))]  # sort coefficients according to n order
+        self.n_list = sorted(n_states)
 
         # private parameters used for defining our Hilbert Space ket
         self._norm = np.linalg.norm(self.c_list)
@@ -240,30 +240,22 @@ def add(psi: QuantumOscillator, phi: QuantumOscillator, new_name=" "):
         set_psi_keys = set(psi.n_coeffs.keys())
         set_phi_keys = set(phi.n_coeffs.keys())
 
-        # setting up logical sets
+        # new n_states
+        all_keys = sorted(set_psi_keys | set_phi_keys)
+
+        # setting up logic for adding coefficients
         double_keys = set_psi_keys & set_phi_keys
-        all_keys = sorted(set_psi_keys | set_phi_keys)  # n_list
         is_in_both = {n: (n in double_keys) for n in all_keys}
 
-        # prepping for coefficients array get
-        n_vector = np.identity(len(all_keys))
-        psi_vector = {n: psi.n_coeffs[n] * n_vector[i] if n in set_psi_keys
-                      else 0 * n_vector[i] for i, n in enumerate(all_keys)}
-
-        phi_vector = {n: phi.n_coeffs[n] * n_vector[i] if n in set_phi_keys
-                      else 0 * n_vector[i] for i, n in enumerate(all_keys)}
-
-        # getting coefficients array
+        # new coefficients
         all_coefficients = []
         for n, it_is in is_in_both.items():
             if it_is:
-                all_coefficients.append(psi_vector[n] + phi_vector[n])
+                all_coefficients.append(psi.n_coeffs[n] + phi.n_coeffs[n])
             elif n in set_psi_keys:
-                all_coefficients.append(psi_vector[n])
+                all_coefficients.append(psi.n_coeffs[n])
             elif n in set_phi_keys:
-                all_coefficients.append(phi_vector[n])
-
-        all_coefficients = sum(all_coefficients)  # c_list
+                all_coefficients.append(phi.n_coeffs[n])
 
         return QuantumOscillator(all_keys, all_coefficients,
                                  omega=psi.omega, h_bar=psi.h_bar, name=new_name)
@@ -291,8 +283,8 @@ if __name__ == '__main__':
     psi_0.display()
     phi_1.display()
 
-    print(f'N|0> = {round(psi_0.number(), 6)}\n'
-          f'N|1> = {phi_1.number()}')
+    print(f'<{psi_0.name}|N|{psi_0.name}> = {round(psi_0.number_mean(), 6)}\n'
+          f'<{phi_1.name}|N|{phi_1.name}> = {round(phi_1.number_mean(), 6)}')
 
     a0 = psi_0.annihilation()
     a1 = phi_1.annihilation()
