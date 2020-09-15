@@ -58,7 +58,7 @@ class QuantumOscillator:
 
     def _remove_zero(self):
         """
-        If |0> is part of the state, removes it and shortens array in self.n_coeffs by 1.
+        If |0> is in the state, removes it and shortens array in self.n_coeffs by 1.
         """
         try:
             del self.n_coeffs[0]
@@ -86,7 +86,7 @@ class QuantumOscillator:
     def number(self):
         """
         Applies number operator to state.
-        :returns <n| N |n> mean value of number operator
+        :returns < ψ | N | ψ > expectation value of number operator
         """
         self._norm = return_value = self._number()
 
@@ -101,7 +101,7 @@ class QuantumOscillator:
     def annihilation(self):
         """
         Applies annihilation operator to state.
-        :returns annihilation result ( sqrt(number operator) )
+        :returns < ψ | a | ψ > expectation value of annihilation operator ( sqrt(number operator) )
         """
         self._norm = return_value = np.sqrt(self._number())
 
@@ -116,7 +116,7 @@ class QuantumOscillator:
     def creation(self):
         """
         Applies creation operator to state.
-        :returns creation result ( sqrt(number operator + 1) )
+        :returns < ψ | a† | ψ > expectation value of creation operator ( sqrt(number operator + 1) )
         """
         self._norm = return_value = np.sqrt(self._number() + 1)
 
@@ -128,32 +128,32 @@ class QuantumOscillator:
     def hamiltonian(self):
         """
         Applies Hamiltonian H.
-        :returns <n| H |n> mean value of energy
+        :returns < ψ | H | ψ > expectation value of energy
         """
         return (self.number() + 0.5) * self.h_bar * self.omega
 
     def number_mean(self):
         """
-        :returns <n| N |n> mean value of number operator
+        :returns < ψ | N | ψ > expectation value of number operator
         """
         return self._number()
 
     def energy_mean(self):
         """
         Does NOT apply Hamiltonian.
-        :returns <n| H |n> mean value of energy
+        :returns < ψ | H | ψ > expectation value of energy
         """
         return (self._number() + 0.5) * self.h_bar * self.omega
 
     def position_squared_mean(self):
         """
-        :returns <n| x^2 |n> mean position squared value
+        :returns < ψ | x^2 | ψ > expectation position squared value
         """
         return (self._number() + 0.5) * self.h_bar / (self.mass * self.omega)
 
     def momentum_squared_mean(self):
         """
-        :returns <n| p^2 |n> mean position squared value
+        :returns < ψ | p^2 | ψ > expectation position squared value
         """
         return self.energy_mean() * self.mass
 
@@ -257,6 +257,12 @@ def add(psi: QuantumOscillator, phi: QuantumOscillator, new_name=" "):
             elif n in set_phi_keys:
                 all_coefficients.append(phi.n_coeffs[n])
 
+        # removing n_states and coefficients when coefficient == 0
+        for i, coeff in enumerate(all_coefficients):
+            if coeff == 0:
+                del all_keys[i]
+                del all_coefficients[i]
+
         return QuantumOscillator(all_keys, all_coefficients,
                                  omega=psi.omega, h_bar=psi.h_bar, name=new_name)
 
@@ -309,3 +315,13 @@ if __name__ == '__main__':
     print('New state, result of adding previous two states:')
     new_state.display()
     print(f'<6|{new_state.name}> = {new_state.n_probability(6)}')
+
+    print('Testing 0 coefficients in "add" function')
+    ket_1 = QuantumOscillator([1, 3], [-1, 1], name="ket_1")
+    ket_2 = QuantumOscillator([3, 5], [-1, 1j], name="ket_2")
+
+    ket_1.display()
+    ket_2.display()
+
+    new_ket = add(ket_1, ket_2, new_name='new_ket')
+    new_ket.display()
