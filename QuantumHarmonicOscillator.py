@@ -101,7 +101,8 @@ class QuantumOscillator:
     def annihilation(self):
         """
         Applies annihilation operator to state.
-        :returns < ψ | a | ψ > expectation value of annihilation operator ( sqrt(number operator) )
+        :returns < ψ_new | a | ψ > expectation value of annihilation operator ( sqrt(number operator) ),
+        with | ψ_new > being normalized state after annihilation
         """
         self._norm = return_value = np.sqrt(self._number())
 
@@ -116,7 +117,8 @@ class QuantumOscillator:
     def creation(self):
         """
         Applies creation operator to state.
-        :returns < ψ | a† | ψ > expectation value of creation operator ( sqrt(number operator + 1) )
+        :returns < ψ_new | a† | ψ > expectation value of creation operator ( sqrt(number operator + 1) ),
+        with | ψ_new > being normalized state after creation
         """
         self._norm = return_value = np.sqrt(self._number() + 1)
 
